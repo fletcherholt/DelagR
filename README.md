@@ -59,8 +59,8 @@ DelagR is no longer built around a self-extracting batch file. The project is no
 ### GitHub Delivery
 
 - Pushes to `main` build a Windows artifact automatically in GitHub Actions.
-- Running the `Release DelagR` workflow creates a tag.
-- That tag triggers the Windows release build and uploads a single downloadable `DelagR.exe` asset to the GitHub Release.
+- Running `Build Windows EXE` manually with `release_version` set, for example `v0.1.1`, builds the app and publishes a GitHub Release in the same workflow.
+- That release includes a single downloadable `DelagR.exe` asset.
 
 ### Building The EXE
 
