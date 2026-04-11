@@ -1,6 +1,6 @@
 # DelagR
 
-A lightweight Windows utility that reduces gaming lag spikes by disabling common Windows background features that interfere with low-latency network traffic. One file, one click, no manual setup required.
+A proper Windows desktop app for reducing gaming lag spikes with a polished glass-style UI, a first-run setup wizard, and a real `.exe` build pipeline.
 
 ![Windows](https://img.shields.io/badge/platform-Windows-blue)
 ![Python](https://img.shields.io/badge/python-3.10%2B-green)
@@ -36,29 +36,50 @@ DelagR is designed for players who get random ping spikes, jitter, or brief conn
 - **Reset Network Stack** — Full Winsock/IP reset for persistent connection issues
 - **Process Priority Boost** — Set any running game to High priority for better CPU scheduling
 
+## What Changed
+
+DelagR is no longer built around a self-extracting batch file. The project is now structured as a packaged desktop app that builds into `DelagR.exe`.
+
+- Native first-run setup wizard before the main UI opens
+- WebView2 runtime detection and repair flow
+- Build script for generating a proper Windows executable
+- GitHub Actions workflow that can build the `.exe` on Windows
+- Cleaner liquid-glass main interface with smoother motion and layout
+
 ## Installation
 
-1. **Download** `DelagR.bat` from the [latest release](../../releases) (or clone this repo)
-2. **Double-click** `DelagR.bat`
+### End Users
 
-That's it. On first run, the app will automatically:
-- Install Python if it's not already on your system
-- Install the required UI framework (pywebview)
-- Request administrator privileges (needed for network changes)
-- Launch the app
+1. Download `DelagR.exe` from the latest GitHub Release.
+2. Launch `DelagR.exe`.
+3. Let the setup wizard check your machine.
+4. If WebView2 is missing, let DelagR install it automatically.
+5. Enter the main app once the wizard shows everything as ready.
 
-Every subsequent launch is instant — it skips the setup steps.
+### GitHub Delivery
+
+- Pushes to `main` build a Windows artifact automatically in GitHub Actions.
+- Running the `Release DelagR` workflow creates a tag.
+- That tag triggers the Windows release build and uploads a single downloadable `DelagR.exe` asset to the GitHub Release.
+
+### Building The EXE
+
+1. Clone this repository on a Windows machine.
+2. Install Python 3.12 or newer.
+3. Run `./build_windows.ps1` from PowerShell.
+4. The packaged app will be output as `dist/DelagR.exe`.
 
 ## Usage
 
-1. Double-click `DelagR.bat` before you start gaming
+1. Launch `DelagR.exe` before you start gaming.
 2. Toggle **Game Mode** ON to apply all optimizations at once, or toggle individual features as needed
 3. When you're done gaming, toggle everything back OFF (or just close the app — changes persist until you revert them)
 
 ### Tips
 
-- **Single-file app** — the icon is bundled inside `DelagR.bat`, so no companion icon file is required
-- **Run as Admin** — The app auto-requests admin privileges, but if something isn't working, right-click the `.bat` file and select "Run as administrator"
+- **Proper desktop build** — the executable is generated with PyInstaller rather than shipped as a batch file
+- **System dependency check** — the setup wizard verifies administrator access and the WebView2 runtime before launching the main UI
+- **Run as Admin** — The app should request elevation when needed, but if Windows blocks that flow, right-click `DelagR.exe` and choose "Run as administrator"
 - **Wi-Fi interface detection** — The app automatically detects your Wi-Fi adapter name, so it works regardless of whether Windows calls it "Wi-Fi", "WLAN", or something else
 - **Process Boost** — Type your game's process name (without .exe) and click Boost while the game is running
 
@@ -74,6 +95,11 @@ The app features a dark, modern UI with smooth animations, toggle switches for e
 
 ## How It Works
 
-DelagR is a single batch file with an embedded Python application. The batch header handles dependency bootstrapping, then extracts and runs the Python code which uses pywebview to render a native window with a modern web-based UI. All optimizations are applied via standard Windows commands (`netsh`, `reg`, `powercfg`, `powershell`) and are fully reversible.
+DelagR now has two stages:
+
+1. A native startup wizard checks the machine for the minimum Windows-side requirements, especially administrator access and the Microsoft Edge WebView2 runtime.
+2. Once the system is ready, the main DelagR window opens using `pywebview`, rendering the glass-style interface and running the network/system optimizations via standard Windows commands such as `netsh`, `reg`, `powercfg`, and `powershell`.
+
+The repo also includes a Windows build script and a GitHub Actions workflow so the app can be packaged as a real `DelagR.exe`.
 
 ## Made with love by Fletcher Holt

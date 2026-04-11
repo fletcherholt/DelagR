@@ -1,0 +1,27 @@
+name: Release DelagR
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version tag to create, for example v0.1.0
+        required: true
+
+jobs:
+  tag-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "${{ github.event.inputs.version }}"
+          git push origin "${{ github.event.inputs.version }}"
