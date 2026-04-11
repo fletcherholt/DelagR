@@ -38,7 +38,7 @@ DelagR is designed for players who get random ping spikes, jitter, or brief conn
 
 ## Installation
 
-1. **Download** `DelagR.bat` and `icon.ico` from the [latest release](../../releases) (or clone this repo)
+1. **Download** `DelagR.bat` from the [latest release](../../releases) (or clone this repo)
 2. **Double-click** `DelagR.bat`
 
 That's it. On first run, the app will automatically:
@@ -57,7 +57,7 @@ Every subsequent launch is instant — it skips the setup steps.
 
 ### Tips
 
-- **Keep both files together** — `DelagR.bat` and `icon.ico` should stay in the same folder
+- **Single-file app** — the icon is bundled inside `DelagR.bat`, so no companion icon file is required
 - **Run as Admin** — The app auto-requests admin privileges, but if something isn't working, right-click the `.bat` file and select "Run as administrator"
 - **Wi-Fi interface detection** — The app automatically detects your Wi-Fi adapter name, so it works regardless of whether Windows calls it "Wi-Fi", "WLAN", or something else
 - **Process Boost** — Type your game's process name (without .exe) and click Boost while the game is running

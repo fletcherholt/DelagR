@@ -53,7 +53,6 @@ if %errorlevel% neq 0 (
 )
 
 :: ---- Extract embedded Python and run ----
-if exist "%~dp0icon.ico" copy /y "%~dp0icon.ico" "%TEMP%\delagr_icon.ico" >nul
 powershell -NoProfile -Command "$c = Get-Content '%~f0' -Raw -Encoding UTF8; $m = '#PYTHON_START'; $i = $c.IndexOf($m); if($i -ge 0){ $c.Substring($i + $m.Length + 2) | Set-Content '%TEMP%\game_optimizer_app.py' -Encoding UTF8 }"
 python "%TEMP%\game_optimizer_app.py"
 exit /b
@@ -65,10 +64,25 @@ Run as Administrator for full functionality.
 Made with love by Fletcher Holt.
 """
 
+import base64
 import subprocess
 import ctypes
 import sys
 import webview
+
+
+ICON_ICO_BASE64 = (
+    "AAABAAEAEBAAAAAAIABYAgAAFgAAAIlQTkcNChoKAAAADUlIRFIAAAAQAAAAEAgGAAAAH/P/YQAAAh9JREFUeJyNks+L"
+    "EmEcxp/3nVFw2mQWDNsI2iIiRKg9lRgESngeNg+BiFfTS/+BCF63S3TrUBv9Mli2H3uIQNYlNvTSJfEQGgSRNdAPMWzm"
+    "nfeN9123HLLaB76XmXk+PN/nOwAgCCAwmXPGnLgdnBf26n0hxV0m/iVKJk4dBNfNKG7MH8Jr7uKl8x1SXL39u3QKgILg"
+    "SSSKIQfOfnyLz8zBNfZjAgCoECCEwHVdBAIBH4B6AKrhMJaCYXxFAGPugoBgH9XgcQ7mOMpcq9XQ6XR2oJz/BiRCBqy5"
+    "ME7Z7/CNhLB18CQMCNiOA41ShAxDGfv9PmKxmDJTKnNPdJNo4spUiRXzqNjaf1hkEwnxbHNTPFpfF/l8XrRaLVWa67q"
+    "+Eol9a1W8GI/xiQD37t7B8+1tXDIO4NWXDzhfvoxjCwt40+vBNE1kMhmkUilfCiIpu2kGgwGurqwgeuI4zpxewvteH08"
+    "3NpBOp2FZFsrlMnK5nIJIm4RQwRg8xlTDkUgERxYXcTF9AY8f1JU5Ho9jOByiUqmoIrvdrir1V4lE16HpujqPpBaLRTX"
+    "cW4O1vIxgMKjiFgoFBWq32yiVSvA8b/YKUru3rtfraDabSCaT6grVahWMMWia5kuA6UY552ps2xbZbFaMRiP13PM8NTN"
+    "/ZUxJxpX0RqOhSjMMA47j7JQ1ffsp/bGClIyq67rqxBd3r4DJav81S83OJcl7MMsPfwLqBlh+rBKLnQAAAABJRU5ErkJ"
+    "ggg=="
+)
 
 
 def is_admin():
@@ -99,6 +113,20 @@ def detect_wifi_interface():
     except Exception:
         pass
     return "Wi-Fi"
+
+
+def ensure_embedded_icon():
+    import os
+    import tempfile
+
+    icon_path = os.path.join(tempfile.gettempdir(), "delagr_icon.ico")
+    try:
+        if not os.path.exists(icon_path):
+            with open(icon_path, "wb") as f:
+                f.write(base64.b64decode(ICON_ICO_BASE64))
+        return icon_path
+    except Exception:
+        return None
 
 
 class OptimizerAPI:
@@ -1071,10 +1099,7 @@ if __name__ == "__main__":
 
     wifi_name = detect_wifi_interface()
     api = OptimizerAPI(wifi_name)
-    import os, tempfile
-    icon_path = os.path.join(tempfile.gettempdir(), "delagr_icon.ico")
-    if not os.path.exists(icon_path):
-        icon_path = None
+    icon_path = ensure_embedded_icon()
 
     window = webview.create_window(
         "DelagR",
