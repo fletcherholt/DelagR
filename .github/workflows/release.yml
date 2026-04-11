@@ -19,9 +19,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create tag
+      - name: Create tag if missing
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git rev-parse "${{ github.event.inputs.version }}" >/dev/null 2>&1; then
+            echo "Tag already exists locally: ${{ github.event.inputs.version }}"
+            exit 0
+          fi
+          if git ls-remote --tags origin "refs/tags/${{ github.event.inputs.version }}" | grep "${{ github.event.inputs.version }}" >/dev/null 2>&1; then
+            echo "Tag already exists on origin: ${{ github.event.inputs.version }}"
+            exit 0
+          fi
           git tag "${{ github.event.inputs.version }}"
           git push origin "${{ github.event.inputs.version }}"
