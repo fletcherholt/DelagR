@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import ctypes
+import datetime as dt
 import json
 import os
 import subprocess
@@ -125,6 +126,24 @@ def detect_webview2() -> tuple[bool, str]:
     return False, "Not installed"
 
 
+def detect_compat_layer() -> str | None:
+    if not is_windows():
+        return None
+
+    try:
+        ntdll = ctypes.WinDLL("ntdll")
+        wine_get_version = getattr(ntdll, "wine_get_version", None)
+        if wine_get_version is None:
+            return None
+        wine_get_version.restype = ctypes.c_char_p
+        version = wine_get_version()
+        if version:
+            return f"Wine / Whisky ({version.decode('utf-8', errors='ignore')})"
+        return "Wine / Whisky"
+    except Exception:
+        return None
+
+
 def install_webview2_runtime() -> dict[str, object]:
     bootstrapper = Path(tempfile.gettempdir()) / "MicrosoftEdgeWebView2Setup.exe"
     command = (
@@ -149,6 +168,7 @@ class SystemSnapshot:
     wifi: str
     webview2_installed: bool
     webview2_version: str
+    compat_layer: str | None
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -156,6 +176,7 @@ class SystemSnapshot:
             "wifi": self.wifi,
             "webview2_installed": self.webview2_installed,
             "webview2_version": self.webview2_version,
+            "compat_layer": self.compat_layer,
         }
 
 
@@ -166,7 +187,52 @@ def collect_system_snapshot() -> SystemSnapshot:
         wifi=detect_wifi_interface(),
         webview2_installed=installed,
         webview2_version=version,
+        compat_layer=detect_compat_layer(),
     )
+
+
+def diagnostics_path() -> Path:
+    desktop = Path.home() / "Desktop"
+    target_dir = desktop if desktop.exists() else Path.home()
+    stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    return target_dir / f"DelagR-diagnostics-{stamp}.txt"
+
+
+def build_diagnostics_report(snapshot: SystemSnapshot) -> str:
+    sections: list[tuple[str, str]] = [
+        (
+            "Summary",
+            "\n".join(
+                [
+                    f"App: {APP_NAME}",
+                    f"Timestamp: {dt.datetime.now().isoformat(timespec='seconds')}",
+                    f"Admin: {snapshot.admin}",
+                    f"Wi-Fi Adapter: {snapshot.wifi}",
+                    f"WebView2 Installed: {snapshot.webview2_installed}",
+                    f"WebView2 Version: {snapshot.webview2_version}",
+                    f"Compatibility Layer: {snapshot.compat_layer or 'Native Windows'}",
+                    f"Frozen Build: {getattr(sys, 'frozen', False)}",
+                    f"Executable: {sys.executable}",
+                ]
+            ),
+        ),
+        ("whoami", str(run_command("whoami").get("out", ""))),
+        ("Windows Version", str(run_command("ver").get("out", ""))),
+        ("Wi-Fi Interfaces", str(run_command("netsh wlan show interfaces").get("out", ""))),
+        ("TCP Global Settings", str(run_command("netsh int tcp show global").get("out", ""))),
+        (
+            "Adapters",
+            str(
+                run_command(
+                    'powershell -NoProfile -Command "Get-NetAdapter | Select-Object Name, Status, LinkSpeed, InterfaceDescription | Format-Table -AutoSize | Out-String"'
+                ).get("out", "")
+            ),
+        ),
+    ]
+
+    return "\n\n".join(
+        f"== {title} ==\n{body.strip() or '(no output)'}" for title, body in sections
+    ) + "\n"
 
 
 class DelagRAPI:
@@ -176,6 +242,15 @@ class DelagRAPI:
     def system_status(self):
         self.snapshot = collect_system_snapshot()
         return {"ok": True, "out": self.snapshot.as_dict(), "err": ""}
+
+    def export_diagnostics(self):
+        self.snapshot = collect_system_snapshot()
+        target = diagnostics_path()
+        try:
+            target.write_text(build_diagnostics_report(self.snapshot), encoding="utf-8")
+        except Exception as exc:
+            return {"ok": False, "out": "", "err": str(exc)}
+        return {"ok": True, "out": f"Saved diagnostics to {target}", "err": ""}
 
     def wifi_autoscan(self, enable: bool):
         flag = "no" if enable else "yes"
@@ -649,7 +724,7 @@ def render_html(snapshot: SystemSnapshot) -> str:
 
     .actions {{
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 16px;
       margin-bottom: 18px;
     }}
@@ -784,6 +859,10 @@ def render_html(snapshot: SystemSnapshot) -> str:
           <div class="label">Renderer</div>
           <div class="value" id="webviewValue">{snapshot.webview2_version}</div>
         </div>
+        <div class="mini-card">
+          <div class="label">Environment</div>
+          <div class="value" id="compatValue">{snapshot.compat_layer or 'Native Windows'}</div>
+        </div>
       </div>
     </section>
 
@@ -813,6 +892,13 @@ def render_html(snapshot: SystemSnapshot) -> str:
               </div>
               <span class="pill info" id="wifiPill">{snapshot.wifi}</span>
             </div>
+            <div class="system-item">
+              <div>
+                <strong>Runtime Environment</strong>
+                <small>Native Windows is recommended for DelagR.</small>
+              </div>
+              <span class="pill {'warn' if snapshot.compat_layer else 'good'}" id="compatPill">{snapshot.compat_layer or 'Native Windows'}</span>
+            </div>
           </div>
         </section>
 
@@ -821,6 +907,9 @@ def render_html(snapshot: SystemSnapshot) -> str:
           <p class="sub">
             Game Mode enables the latency-focused switches below in one move. Individual changes remain active
             until you turn them back off, so DelagR is built for before-and-after gaming sessions.
+          </p>
+          <p class="sub" style="margin-top: 12px;">
+            If launch or networking behavior looks off, Export Diagnostics saves a quick support snapshot to your desktop.
           </p>
         </section>
       </aside>
@@ -857,6 +946,7 @@ def render_html(snapshot: SystemSnapshot) -> str:
             {action_card("btn-flush", "🧹", "Flush DNS", "Clear cached resolver entries.", "flush_dns")}
             {action_card("btn-kill", "🔪", "Kill Bandwidth Hogs", "Close common upload-heavy background apps.", "kill_bandwidth_hogs")}
             {action_card("btn-reset", "🔄", "Reset Network Stack", "Use the heavy reset path for stubborn issues.", "reset_network")}
+            {action_card("btn-diagnostics", "🧾", "Export Diagnostics", "Save a support snapshot to your desktop.", "export_diagnostics")}
           </div>
 
           <h2>Process Priority</h2>
@@ -951,6 +1041,9 @@ def render_html(snapshot: SystemSnapshot) -> str:
       document.getElementById('webviewValue').textContent = status.webview2_version;
       document.getElementById('webviewPill').textContent = status.webview2_version;
       document.getElementById('webviewPill').className = 'pill ' + (status.webview2_installed ? 'good' : 'warn');
+      document.getElementById('compatValue').textContent = status.compat_layer || 'Native Windows';
+      document.getElementById('compatPill').textContent = status.compat_layer || 'Native Windows';
+      document.getElementById('compatPill').className = 'pill ' + (status.compat_layer ? 'warn' : 'good');
     }}
 
     document.addEventListener('DOMContentLoaded', () => {{
@@ -1004,6 +1097,7 @@ class SetupWizard:
             "admin": tk.StringVar(value="Checking"),
             "webview": tk.StringVar(value="Checking"),
             "wifi": tk.StringVar(value="Checking"),
+            "compat": tk.StringVar(value="Checking"),
             "state": tk.StringVar(value="Inspecting your system..."),
         }
         self.launch_ready = False
@@ -1044,6 +1138,7 @@ class SetupWizard:
         self._row(body, "Administrator Access", "Needed for network and registry changes.", self.status_vars["admin"])
         self._row(body, "WebView2 Runtime", "Required for the modern DelagR renderer.", self.status_vars["webview"])
         self._row(body, "Wi-Fi Adapter", "Used for interface-specific network commands.", self.status_vars["wifi"])
+        self._row(body, "Runtime Environment", "Native Windows is recommended. Wine / Whisky are not supported.", self.status_vars["compat"])
 
         footer = tk.Frame(card, bg="#0d1a2c", padx=28, pady=24)
         footer.pack(fill="x")
@@ -1091,6 +1186,22 @@ class SetupWizard:
         )
         self.launch_button.pack(side="right")
 
+        self.export_button = tk.Button(
+            actions,
+            text="Save Diagnostics",
+            command=self.export_diagnostics,
+            relief="flat",
+            bg="#1b2b45",
+            fg="#d6efff",
+            activebackground="#243a5d",
+            activeforeground="#f2fbff",
+            font=("Segoe UI Semibold", 11),
+            padx=16,
+            pady=10,
+            cursor="hand2",
+        )
+        self.export_button.pack(side="right", padx=(0, 10))
+
     def _row(self, parent, title, description, var):
         frame = tk.Frame(parent, bg="#11213a", padx=16, pady=14, highlightbackground="#1f3d63", highlightthickness=1)
         frame.pack(fill="x", pady=7)
@@ -1105,9 +1216,16 @@ class SetupWizard:
         self.status_vars["admin"].set("Ready" if self.snapshot.admin else "Missing")
         self.status_vars["webview"].set(self.snapshot.webview2_version)
         self.status_vars["wifi"].set(self.snapshot.wifi)
+        self.status_vars["compat"].set(self.snapshot.compat_layer or "Native Windows")
 
-        self.launch_ready = self.snapshot.admin and self.snapshot.webview2_installed
-        if self.launch_ready:
+        self.launch_ready = self.snapshot.admin and self.snapshot.webview2_installed and not self.snapshot.compat_layer
+        if self.snapshot.compat_layer:
+            self.status_vars["state"].set(
+                f"Detected {self.snapshot.compat_layer}. DelagR currently targets native Windows and may not launch correctly under Whisky or Wine."
+            )
+            self.launch_button.config(state="disabled")
+            self.install_button.config(state="disabled")
+        elif self.launch_ready:
             self.status_vars["state"].set("Everything is ready. Launch DelagR when you are ready.")
             self.launch_button.config(state="normal")
             self.install_button.config(state="disabled")
@@ -1127,6 +1245,11 @@ class SetupWizard:
                 relaunch_as_admin()
                 return
 
+            if self.snapshot.compat_layer:
+                result_message = f"{self.snapshot.compat_layer} detected. Native Windows is required for reliable startup."
+                self.root.after(0, lambda: self._finish_install(result_message))
+                return
+
             if not self.snapshot.webview2_installed:
                 result = install_webview2_runtime()
                 result_message = result["out"] if result["ok"] else result["err"]
@@ -1143,6 +1266,16 @@ class SetupWizard:
 
     def launch(self):
         self.root.destroy()
+
+    def export_diagnostics(self):
+        self.snapshot = collect_system_snapshot()
+        try:
+            target = diagnostics_path()
+            target.write_text(build_diagnostics_report(self.snapshot), encoding="utf-8")
+        except Exception as exc:
+            self.status_vars["state"].set(f"Failed to save diagnostics: {exc}")
+            return
+        self.status_vars["state"].set(f"Saved diagnostics to {target}")
 
     def run(self) -> SystemSnapshot | None:
         self.root.mainloop()

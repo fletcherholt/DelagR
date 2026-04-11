@@ -82,6 +82,8 @@ DelagR is no longer built around a self-extracting batch file. The project is no
 - **Run as Admin** — The app should request elevation when needed, but if Windows blocks that flow, right-click `DelagR.exe` and choose "Run as administrator"
 - **Wi-Fi interface detection** — The app automatically detects your Wi-Fi adapter name, so it works regardless of whether Windows calls it "Wi-Fi", "WLAN", or something else
 - **Process Boost** — Type your game's process name (without .exe) and click Boost while the game is running
+- **Diagnostics export** — use Export Diagnostics to save a support snapshot to your desktop if something looks wrong
+- **Whisky / Wine** — DelagR targets native Windows and is not expected to launch reliably under Whisky, Wine, or other compatibility layers
 
 ## Screenshots
 
