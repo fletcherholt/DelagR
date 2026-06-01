@@ -26,7 +26,7 @@ except ImportError:  # Non-Windows development environment
 
 
 APP_NAME = "DelagR"
-APP_VERSION = "2.1.1"
+APP_VERSION = "2.1.2"
 
 GITHUB_OWNER = "fletcherholt"
 GITHUB_REPO = "DelagR"
@@ -1380,6 +1380,13 @@ def start_main_ui(snapshot: SystemSnapshot):
     if OS == "windows":
         try:
             webview.start(gui="edgechromium")
+            return
+        except Exception:
+            pass
+    elif OS == "linux":
+        # Only the Qt backend is bundled; don't let pywebview try GTK first.
+        try:
+            webview.start(gui="qt")
             return
         except Exception:
             pass

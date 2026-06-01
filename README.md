@@ -8,7 +8,7 @@ Toggle packet-friendly network tweaks, clear background interference, and flip i
 ![Windows](https://img.shields.io/badge/Windows-0D1B2A?logo=windows&logoColor=778DA9)
 ![macOS](https://img.shields.io/badge/macOS-1B263B?logo=apple&logoColor=778DA9)
 ![Linux](https://img.shields.io/badge/Linux-415A77?logo=linux&logoColor=E0E1DD)
-![Version](https://img.shields.io/badge/version-2.1.1-778DA9)
+![Version](https://img.shields.io/badge/version-2.1.2-778DA9)
 ![License](https://img.shields.io/badge/license-MIT-E0E1DD)
 
 </div>

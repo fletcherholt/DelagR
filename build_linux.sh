@@ -13,6 +13,7 @@ pyinstaller \
   --name DelagR-linux \
   --collect-all webview \
   --collect-all PyQt5 \
+  --collect-all qtpy \
   src/delagr.py
 
 echo "Built: $(pwd)/dist/DelagR-linux"
