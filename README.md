@@ -5,7 +5,7 @@ A proper Windows desktop app for reducing gaming lag spikes with a polished glas
 ![Windows](https://img.shields.io/badge/platform-Windows-blue)
 ![Python](https://img.shields.io/badge/python-3.10%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-yellow)
-![Version](https://img.shields.io/badge/version-2.0-blueviolet)
+![Version](https://img.shields.io/badge/version-2.0.1-blueviolet)
 
 ## What's New in 2.0
 

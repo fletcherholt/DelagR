@@ -22,7 +22,7 @@ except ImportError:  # Non-Windows development environment
 
 
 APP_NAME = "DelagR"
-APP_VERSION = "2.0"
+APP_VERSION = "2.0.1"
 WEBVIEW2_BOOTSTRAPPER_URL = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
 WEBVIEW2_CLIENT_GUID = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
 ICON_ICO_BASE64 = (
@@ -50,9 +50,14 @@ def is_admin() -> bool:
         return False
 
 
-def relaunch_as_admin() -> None:
+def relaunch_as_admin() -> bool:
+    """Try to relaunch DelagR elevated.
+
+    Returns True if a new elevated process was started (the caller should then
+    close this instance), or False if elevation was unavailable or declined.
+    """
     if not is_windows() or is_admin():
-        return
+        return False
 
     if getattr(sys, "frozen", False):
         executable = sys.executable
@@ -61,8 +66,13 @@ def relaunch_as_admin() -> None:
         executable = sys.executable
         params = subprocess.list2cmdline([os.path.abspath(__file__), *sys.argv[1:]])
 
-    ctypes.windll.shell32.ShellExecuteW(None, "runas", executable, params, None, 1)
-    sys.exit()
+    try:
+        rc = ctypes.windll.shell32.ShellExecuteW(None, "runas", executable, params, None, 1)
+    except Exception:
+        return False
+    # ShellExecuteW returns a value greater than 32 on success; UAC decline or
+    # any failure returns a smaller error code.
+    return int(rc) > 32
 
 
 def ensure_runtime_icon() -> str | None:
@@ -83,6 +93,8 @@ def run_command(command: str, timeout: int = 20) -> dict[str, object]:
             capture_output=True,
             text=True,
             timeout=timeout,
+            # Prevent a console window flashing on each call in the windowed exe.
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
         return {
             "ok": completed.returncode == 0,
@@ -123,6 +135,21 @@ def detect_webview2() -> tuple[bool, str]:
                     return True, str(version)
         except OSError:
             continue
+
+    # Filesystem fallback: if the EdgeUpdate keys are missing but the Evergreen
+    # runtime is actually installed, detect it by its install directory so we
+    # don't falsely block launch.
+    for env_var in ("ProgramFiles(x86)", "ProgramW6432", "ProgramFiles"):
+        base = os.environ.get(env_var)
+        if not base:
+            continue
+        app_dir = Path(base) / "Microsoft" / "EdgeWebView" / "Application"
+        try:
+            versions = [p.name for p in app_dir.iterdir() if p.is_dir() and p.name[0].isdigit()]
+        except OSError:
+            continue
+        if versions:
+            return True, sorted(versions)[-1]
 
     return False, "Not installed"
 
@@ -1406,16 +1433,23 @@ class SetupWizard:
             self.install_button.config(state="normal")
 
     def install_missing(self):
+        # Elevation must be handled on the main thread: sys.exit() from a worker
+        # thread would not actually close this process, leaving two windows open.
+        if not self.snapshot.admin:
+            self.status_vars["state"].set("Restarting as administrator...")
+            if relaunch_as_admin():
+                self.root.destroy()  # elevated instance takes over
+            else:
+                self.status_vars["state"].set(
+                    "Administrator access was declined. Right-click DelagR and choose 'Run as administrator'."
+                )
+            return
+
         self.install_button.config(state="disabled")
         self.status_vars["state"].set("Installing missing components. This can take a moment...")
 
         def worker():
             result_message = None
-            if not self.snapshot.admin:
-                self.status_vars["state"].set("Restarting as administrator...")
-                relaunch_as_admin()
-                return
-
             if self.snapshot.compat_layer:
                 result_message = f"{self.snapshot.compat_layer} detected. Native Windows is required for reliable startup."
                 self.root.after(0, lambda: self._finish_install(result_message))
@@ -1455,13 +1489,12 @@ class SetupWizard:
 
 def start_main_ui(snapshot: SystemSnapshot):
     api = DelagRAPI(snapshot)
-    icon_path = ensure_runtime_icon()
     html = render_html(snapshot)
 
-    # NOTE: create_window() does not accept an `icon` kwarg in pywebview.
     # The window/taskbar icon comes from the PyInstaller --icon baked into the
-    # exe; icon_path is only passed to start() where supported.
-    window = webview.create_window(
+    # exe. pywebview's create_window()/start() icon handling is GTK/Qt-only and
+    # is not needed (or accepted) on the Windows edgechromium backend.
+    webview.create_window(
         APP_NAME,
         html=html,
         js_api=api,
@@ -1472,11 +1505,7 @@ def start_main_ui(snapshot: SystemSnapshot):
         text_select=False,
     )
 
-    # `icon` is only honored by some pywebview backends (GTK/Qt); pass it when
-    # accepted and fall back cleanly otherwise.
     try:
-        webview.start(gui="edgechromium", icon=icon_path)
-    except TypeError:
         webview.start(gui="edgechromium")
     except Exception:
         webview.start()
