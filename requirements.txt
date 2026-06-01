@@ -1,4 +1,7 @@
 pywebview>=4.4
-Pillow>=11.0
 pyinstaller>=6.0
-
+Pillow>=11.0
+pyobjc-framework-Cocoa>=10.0 ; sys_platform == 'darwin'
+pyobjc-framework-WebKit>=10.0 ; sys_platform == 'darwin'
+PyQt5>=5.15 ; sys_platform == 'linux'
+PyQtWebEngine>=5.15 ; sys_platform == 'linux'
