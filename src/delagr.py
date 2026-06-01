@@ -1386,7 +1386,35 @@ def start_main_ui(snapshot: SystemSnapshot):
     webview.start()
 
 
+def selftest() -> int:
+    """Headless smoke test: build the snapshot, render the UI, and import the
+    GUI backend for this OS. Used by CI to verify the packaged build actually
+    runs on each platform. Returns a process exit code."""
+    snapshot = SystemSnapshot(
+        os=OS, os_label=OS_LABEL, privileged=False, interface="selftest",
+        webview2_installed=True, webview2_version="selftest", compat_layer=None,
+    )
+    html = render_html(snapshot)
+    assert "<!DOCTYPE html>" in html and "DelagR" in html and len(html) > 8000, "render failed"
+
+    import importlib
+    backend = {
+        "windows": "webview.platforms.edgechromium",
+        "macos": "webview.platforms.cocoa",
+        "linux": "webview.platforms.qt",
+    }[OS]
+    importlib.import_module(backend)  # raises if the GUI stack is not bundled
+
+    # Exercise the read-only update version logic too.
+    assert is_newer("v99.0.0", APP_VERSION) and not is_newer(APP_VERSION, APP_VERSION)
+    print(f"DelagR {APP_VERSION} selftest OK on {OS_LABEL}: render + {backend} import + version logic")
+    return 0
+
+
 def main():
+    if "--selftest" in sys.argv:
+        raise SystemExit(selftest())
+
     wizard = SetupWizard()
     snapshot = wizard.run()
     if snapshot:
