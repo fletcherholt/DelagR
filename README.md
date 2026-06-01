@@ -58,9 +58,9 @@ Download the build for your OS from the [latest release](https://github.com/flet
 DelagR checks GitHub on launch. When a newer release exists, a bar slides in at the top:
 
 ```
-┌─────────────────────────────────────┐
-│ ⬆ DelagR v2.2.0 is available  [ Update now ] [ Later ] │
-└─────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────┐
+│ ↑ DelagR v2.2.0 is available    [ Update now ]  [ Later ] │
+└───────────────────────────────────────────────────────────┘
 ```
 
 **Update now** downloads the right asset for your OS, replaces the running binary, and relaunches — no manual steps.
