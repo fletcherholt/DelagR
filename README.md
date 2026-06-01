@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚡ DelagR
+# DelagR
 
 **A cross-platform, low-latency control room for gaming.**
 Toggle packet-friendly network tweaks, clear background interference, and flip it all back when you're done.
@@ -88,6 +88,6 @@ A small setup wizard verifies privileges and the renderer, then the main window 
 
 <div align="center">
 
-**♥ Made with love by Fletcher Holt**
+**Made by Fletcher Holt**
 
 </div>
