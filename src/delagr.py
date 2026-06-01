@@ -26,7 +26,7 @@ except ImportError:  # Non-Windows development environment
 
 
 APP_NAME = "DelagR"
-APP_VERSION = "2.1.0"
+APP_VERSION = "2.1.1"
 
 GITHUB_OWNER = "fletcherholt"
 GITHUB_REPO = "DelagR"
@@ -654,7 +654,10 @@ class DelagRAPI:
                 if result["ok"] and "SUCCESS" in str(result["out"]):
                     killed.append(proc)
             else:
-                result = run_command(f'pkill -if "{proc}"')
+                # Bracket the first char so the pattern doesn't match this very
+                # command's argv (pgrep/pkill -f self-match trap).
+                pattern = f"[{proc[0]}]{proc[1:]}"
+                result = run_command(f'pkill -if "{pattern}"')
                 if result["ok"]:
                     killed.append(proc)
         return {"ok": True, "out": f"Killed: {', '.join(killed) if killed else 'none running'}", "err": ""}
@@ -684,8 +687,10 @@ class DelagRAPI:
                 '"'
             )
         else:
+            # Match on the process name (no -f) so we don't self-match the
+            # wrapper shell whose argv contains the search string.
             result = run_command(
-                f'pids=$(pgrep -if "{process_name}"); '
+                f'pids=$(pgrep -i "{process_name}"); '
                 'if [ -n "$pids" ]; then renice -n -10 -p $pids >/dev/null 2>&1 && echo BOOSTED; else echo NOTFOUND; fi',
                 elevate=True,
             )
