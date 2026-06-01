@@ -22,6 +22,7 @@ except ImportError:  # Non-Windows development environment
 
 
 APP_NAME = "DelagR"
+APP_VERSION = "2.0"
 WEBVIEW2_BOOTSTRAPPER_URL = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
 WEBVIEW2_CLIENT_GUID = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
 ICON_ICO_BASE64 = (
@@ -828,6 +829,152 @@ def render_html(snapshot: SystemSnapshot) -> str:
       to {{ opacity: 1; transform: translateY(0) scale(1); }}
     }}
 
+    /* ---- V2.0 intro splash ---- */
+    .intro {{
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at 50% 38%, #0c2138, #050f1b 72%);
+      transition: opacity 0.8s ease, transform 0.8s ease, visibility 0.8s;
+    }}
+
+    .intro.hide {{
+      opacity: 0;
+      transform: scale(1.06);
+      visibility: hidden;
+      pointer-events: none;
+    }}
+
+    .intro-brand {{
+      font-family: 'Space Grotesk', sans-serif;
+      letter-spacing: 0.42em;
+      text-transform: uppercase;
+      font-size: 13px;
+      color: var(--cyan);
+      text-align: center;
+      margin-bottom: 18px;
+      opacity: 0;
+      animation: introFade 0.8s ease 0.1s forwards;
+    }}
+
+    .intro-made {{
+      display: flex;
+      gap: 0.32em;
+      justify-content: center;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      font-size: clamp(2.4rem, 8vw, 5.2rem);
+      line-height: 1;
+    }}
+
+    .intro-made span {{
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(26px);
+      animation: introWord 0.9s cubic-bezier(.2,.8,.2,1) forwards;
+    }}
+
+    .intro-made span:nth-child(1) {{ animation-delay: 0.28s; }}
+    .intro-made span:nth-child(2) {{ animation-delay: 0.46s; }}
+
+    .intro-made .name {{
+      background: linear-gradient(120deg, #ffffff, var(--cyan) 46%, var(--blue));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 44px rgba(121,233,255,0.35);
+      animation-delay: 0.7s;
+    }}
+
+    .intro-bar {{
+      width: 180px;
+      height: 3px;
+      margin: 30px auto 0;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.1);
+      overflow: hidden;
+    }}
+
+    .intro-bar::after {{
+      content: '';
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--cyan), var(--blue));
+      animation: introBar 2.3s ease 0.3s forwards;
+    }}
+
+    @keyframes introFade {{ to {{ opacity: 1; }} }}
+    @keyframes introWord {{ to {{ opacity: 1; transform: translateY(0); }} }}
+    @keyframes introBar {{ to {{ width: 100%; }} }}
+
+    /* ---- staggered entrances ---- */
+    .shell {{ animation: shellIn 0.9s ease 0.1s both; }}
+    @keyframes shellIn {{
+      from {{ opacity: 0; transform: translateY(10px); }}
+      to {{ opacity: 1; transform: translateY(0); }}
+    }}
+
+    .card-grid .card:nth-child(1) {{ animation-delay: 0.04s; }}
+    .card-grid .card:nth-child(2) {{ animation-delay: 0.09s; }}
+    .card-grid .card:nth-child(3) {{ animation-delay: 0.14s; }}
+    .card-grid .card:nth-child(4) {{ animation-delay: 0.19s; }}
+    .card-grid .card:nth-child(5) {{ animation-delay: 0.24s; }}
+    .card-grid .card:nth-child(6) {{ animation-delay: 0.29s; }}
+    .card-grid .card:nth-child(7) {{ animation-delay: 0.34s; }}
+    .card-grid .card:nth-child(8) {{ animation-delay: 0.39s; }}
+    .card-grid .card:nth-child(9) {{ animation-delay: 0.44s; }}
+
+    .actions .action {{ animation: rise 0.5s ease both; }}
+    .actions .action:nth-child(1) {{ animation-delay: 0.05s; }}
+    .actions .action:nth-child(2) {{ animation-delay: 0.12s; }}
+    .actions .action:nth-child(3) {{ animation-delay: 0.19s; }}
+    .actions .action:nth-child(4) {{ animation-delay: 0.26s; }}
+
+    /* ---- micro-interactions ---- */
+    .game-mode.active {{ animation: glowPulse 3.4s ease-in-out infinite; }}
+    @keyframes glowPulse {{
+      0%, 100% {{ box-shadow: 0 0 0 0 rgba(135,255,195,0); }}
+      50% {{ box-shadow: 0 0 38px rgba(135,255,195,0.18); }}
+    }}
+
+    .icon {{ transition: transform 0.3s ease; }}
+    .card:hover .icon, .action:hover .icon {{ transform: translateY(-2px) scale(1.08); }}
+
+    .pill.good {{ animation: pillGlow 4s ease-in-out infinite; }}
+    @keyframes pillGlow {{
+      0%, 100% {{ box-shadow: 0 0 0 0 rgba(135,255,195,0); }}
+      50% {{ box-shadow: 0 0 0 4px rgba(135,255,195,0.10); }}
+    }}
+
+    .heart {{
+      color: var(--red);
+      display: inline-block;
+      animation: beat 1.6s ease-in-out infinite;
+    }}
+    @keyframes beat {{
+      0%, 100% {{ transform: scale(1); }}
+      30% {{ transform: scale(1.22); }}
+      45% {{ transform: scale(1.05); }}
+    }}
+
+    .footer-sub {{
+      margin-top: 6px;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(154,178,200,0.6);
+    }}
+
+    @media (prefers-reduced-motion: reduce) {{
+      *, *::before, *::after {{ animation: none !important; transition: none !important; }}
+      .intro {{ display: none; }}
+    }}
+
     @media (max-width: 980px) {{
       .hero, .layout {{ grid-template-columns: 1fr; }}
       .card-grid, .actions {{ grid-template-columns: 1fr; }}
@@ -836,10 +983,20 @@ def render_html(snapshot: SystemSnapshot) -> str:
   </style>
 </head>
 <body>
+  <div class="intro" id="intro">
+    <div>
+      <div class="intro-brand">DelagR</div>
+      <div class="intro-made">
+        <span>Made</span><span>for</span><span class="name">Josh</span>
+      </div>
+      <div class="intro-bar"></div>
+    </div>
+  </div>
+
   <div class="shell">
     <section class="hero glass">
       <div class="hero-copy">
-        <div class="eyebrow">Windows Gaming Network Optimizer</div>
+        <div class="eyebrow">Windows Gaming Network Optimizer · v{APP_VERSION}</div>
         <h1><span class="gradient">DelagR</span></h1>
         <p class="lead">
           A polished low-latency control room for gaming on Windows. Toggle packet-friendly network tweaks,
@@ -958,7 +1115,10 @@ def render_html(snapshot: SystemSnapshot) -> str:
       </main>
     </div>
 
-    <div class="footer">Made with love by Fletcher Holt</div>
+    <div class="footer">
+      <span class="heart">&#9829;</span> Made with love by Fletcher Holt
+      <div class="footer-sub">DelagR v{APP_VERSION}</div>
+    </div>
   </div>
 
   <div class="toast-stack" id="toasts"></div>
@@ -1046,10 +1206,19 @@ def render_html(snapshot: SystemSnapshot) -> str:
       document.getElementById('compatPill').className = 'pill ' + (status.compat_layer ? 'warn' : 'good');
     }}
 
+    function dismissIntro() {{
+      const intro = document.getElementById('intro');
+      if (!intro) return;
+      intro.classList.add('hide');
+      setTimeout(() => intro.remove(), 850);
+    }}
+
     document.addEventListener('DOMContentLoaded', () => {{
       document.getElementById('processInput').addEventListener('keydown', (event) => {{
         if (event.key === 'Enter') boostProcess();
       }});
+      // Let the "Made for Josh" splash finish, then reveal the app.
+      setTimeout(dismissIntro, 2600);
       refreshSystem();
     }});
   </script>
@@ -1086,7 +1255,9 @@ def action_card(button_id: str, icon: str, title: str, text: str, method: str) -
 
 class SetupWizard:
     def __init__(self):
-        self.snapshot = collect_system_snapshot()
+        # refresh_status() collects the snapshot once the UI is built; avoid a
+        # redundant (slow) PowerShell/netsh sweep here at construction time.
+        self.snapshot: SystemSnapshot | None = None
         self.root = tk.Tk()
         self.root.title(f"{APP_NAME} Setup")
         self.root.geometry("720x520")
@@ -1287,6 +1458,9 @@ def start_main_ui(snapshot: SystemSnapshot):
     icon_path = ensure_runtime_icon()
     html = render_html(snapshot)
 
+    # NOTE: create_window() does not accept an `icon` kwarg in pywebview.
+    # The window/taskbar icon comes from the PyInstaller --icon baked into the
+    # exe; icon_path is only passed to start() where supported.
     window = webview.create_window(
         APP_NAME,
         html=html,
@@ -1296,10 +1470,13 @@ def start_main_ui(snapshot: SystemSnapshot):
         min_size=(900, 680),
         background_color="#07111f",
         text_select=False,
-        icon=icon_path,
     )
 
+    # `icon` is only honored by some pywebview backends (GTK/Qt); pass it when
+    # accepted and fall back cleanly otherwise.
     try:
+        webview.start(gui="edgechromium", icon=icon_path)
+    except TypeError:
         webview.start(gui="edgechromium")
     except Exception:
         webview.start()

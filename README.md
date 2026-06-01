@@ -5,6 +5,15 @@ A proper Windows desktop app for reducing gaming lag spikes with a polished glas
 ![Windows](https://img.shields.io/badge/platform-Windows-blue)
 ![Python](https://img.shields.io/badge/python-3.10%2B-green)
 ![License](https://img.shields.io/badge/license-MIT-yellow)
+![Version](https://img.shields.io/badge/version-2.0-blueviolet)
+
+## What's New in 2.0
+
+- Animated **"Made for Josh"** intro splash on launch
+- Reworked liquid-glass UI with staggered card entrances, hover micro-interactions, and a pulsing status glow
+- Smoother toggles, an animated heartbeat footer, and `prefers-reduced-motion` support
+- Fixed a launch crash caused by passing an unsupported `icon` argument to the WebView2 window
+- Trimmed redundant system probes at startup for a faster first paint
 
 ## What It Does
 
